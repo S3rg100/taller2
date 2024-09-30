@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">taller2</string>
+    <string name="camara">CÁMARA</string>
+    <string name="mapa">MAPA</string>
+    <string name="tomar_foto">TOMAR FOTO</string>
+    <string name="imagen_seleccionada">Imagen seleccionada</string>
+    <string name="taller_2">Taller 2</string>
+    <string name="video">Video</string>
+    <string name="elegir_desde_galeria">ELEGIR DESDE GALERIA</string>
+</resources>

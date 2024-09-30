@@ -1,0 +1,65 @@
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:padding="16dp">
+
+    <!-- Switch en la parte superior derecha -->
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/switch_video"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="@string/video"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_gravity="end"/>
+
+    <!-- Imagen centrada debajo del Switch -->
+
+    <!-- ImageView para mostrar la imagen seleccionada -->
+    <ImageView
+        android:id="@+id/image_view"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/imagen_seleccionada"
+        app:layout_constraintTop_toBottomOf="@id/switch_video"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:visibility="visible"/>
+
+    <!-- VideoView para mostrar el video seleccionado -->
+    <VideoView
+        android:id="@+id/video_view"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/switch_video"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+    <!-- Botón de cámara -->
+    <Button
+        android:id="@+id/btn_open_camera"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/tomar_foto"
+        app:layout_constraintTop_toBottomOf="@id/image_view"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_open_gallery"
+        android:layout_marginTop="16dp"/>
+
+    <!-- Botón de galería -->
+    <Button
+        android:id="@+id/btn_open_gallery"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/elegir_desde_galeria"
+        app:layout_constraintTop_toBottomOf="@id/image_view"
+        app:layout_constraintStart_toEndOf="@id/btn_open_camera"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
