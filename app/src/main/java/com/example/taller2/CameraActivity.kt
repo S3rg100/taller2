@@ -2,7 +2,9 @@ package com.example.taller2
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
@@ -14,6 +16,8 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.switchmaterial.SwitchMaterial
 
 class CameraActivity : AppCompatActivity() {
@@ -22,6 +26,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var videoView: VideoView
     private lateinit var switchVideo: SwitchMaterial
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var galleryPermissionLauncher: ActivityResultLauncher<String>
 
     private val REQUEST_IMAGE_CAPTURE = 1
     private val REQUEST_VIDEO_CAPTURE = 3
@@ -43,16 +48,21 @@ class CameraActivity : AppCompatActivity() {
         cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
                 // Si el permiso fue otorgado
-                if (switchVideo.isChecked) {
-                    // Iniciar la grabación de video
-                    dispatchTakeVideoIntent()
-                } else {
-                    // Iniciar la captura de imagen
-                    dispatchTakePictureIntent()
-                }
+                handleCameraAction()
             } else {
                 // Si el permiso fue denegado
                 Toast.makeText(this, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Registrar el lanzador de permisos de galería
+        galleryPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                // Si el permiso fue otorgado
+                handleGalleryAction()
+            } else {
+                // Si el permiso fue denegado
+                Toast.makeText(this, "Permiso para acceder a la galería denegado", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -63,29 +73,49 @@ class CameraActivity : AppCompatActivity() {
 
         // Acción para abrir la galería
         btnOpenGallery.setOnClickListener {
-            if (switchVideo.isChecked) {
-                // Seleccionar un video de la galería
-                val pickVideoIntent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-                startActivityForResult(pickVideoIntent, REQUEST_PICK_VIDEO)
-            } else {
-                // Seleccionar una foto de la galería
-                val pickPhotoIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-                startActivityForResult(pickPhotoIntent, REQUEST_PICK_IMAGE)
-            }
+            checkGalleryPermission()
         }
     }
 
-    // Solicitar permisos de cámara si es necesario
+    // Permisos de Cámara
     private fun checkCameraPermission() {
-        when {
-            shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
-                // Explicación del permiso de cámara
-                Toast.makeText(this, "Se necesita acceso a la cámara para tomar fotos y videos", Toast.LENGTH_LONG).show()
-            }
-            else -> {
-                // Lanzar la solicitud de permiso de cámara
-                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-            }
+        requestPermissionWithSnackbar(
+            this,
+            Manifest.permission.CAMERA,
+            "Se necesita acceso a la cámara para tomar fotos y videos",
+            cameraPermissionLauncher,
+            ::handleCameraAction // Lanza la acción de cámara si ya tiene los permisos
+        )
+    }
+
+    // Permisos de Galería
+    private fun checkGalleryPermission() {
+        requestPermissionWithSnackbar(
+            this,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            "Se necesita acceso a la galería para seleccionar fotos y videos",
+            galleryPermissionLauncher,
+            ::handleGalleryAction // Lanza la acción de galería si ya tiene los permisos
+        )
+    }
+
+    // Maneja la acción de la cámara dependiendo de si está seleccionada la opción de video o foto
+    private fun handleCameraAction() {
+        if (switchVideo.isChecked) {
+            dispatchTakeVideoIntent()
+        } else {
+            dispatchTakePictureIntent()
+        }
+    }
+
+    // Maneja la acción de la galería dependiendo de si está seleccionada la opción de video o foto
+    private fun handleGalleryAction() {
+        if (switchVideo.isChecked) {
+            val pickVideoIntent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+            startActivityForResult(pickVideoIntent, REQUEST_PICK_VIDEO)
+        } else {
+            val pickPhotoIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+            startActivityForResult(pickPhotoIntent, REQUEST_PICK_IMAGE)
         }
     }
 
@@ -140,6 +170,38 @@ class CameraActivity : AppCompatActivity() {
                     videoView.visibility = VideoView.VISIBLE
                     imageView.visibility = ImageView.GONE
                 }
+            }
+        }
+    }
+
+    // Logica para pedir permisos
+    private fun requestPermissionWithSnackbar(
+        context: Context,
+        permission: String,
+        rationale: String,
+        getSimplePermission: ActivityResultLauncher<String>,
+        onPermissionGranted: () -> Unit // Nuevo parámetro para manejar la acción cuando los permisos ya están concedidos
+    ) {
+        when {
+            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED -> {
+                Snackbar.make(findViewById(android.R.id.content), "Ya tengo los permisos", Snackbar.LENGTH_LONG).show()
+                onPermissionGranted() // Lanzar la acción correspondiente
+            }
+
+            shouldShowRequestPermissionRationale(permission) -> {
+                val snackbar = Snackbar.make(findViewById(android.R.id.content), rationale, Snackbar.LENGTH_LONG)
+                snackbar.addCallback(object : Snackbar.Callback() {
+                    override fun onDismissed(snackbar: Snackbar, event: Int) {
+                        if (event == DISMISS_EVENT_TIMEOUT) {
+                            getSimplePermission.launch(permission)
+                        }
+                    }
+                })
+                snackbar.show()
+            }
+
+            else -> {
+                getSimplePermission.launch(permission)
             }
         }
     }
