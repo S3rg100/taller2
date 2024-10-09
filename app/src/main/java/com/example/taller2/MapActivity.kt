@@ -3,6 +3,7 @@ package com.example.taller2
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -101,6 +102,19 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+
+        // Aplicar estilo personalizado desde el archivo JSON
+        try {
+            val success = mMap.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(this, R.raw.map_style)
+            )
+            if (!success) {
+                Toast.makeText(this, "Error al aplicar el estilo del mapa.", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Resources.NotFoundException) {
+            Toast.makeText(this, "No se encontró el archivo de estilo del mapa.", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
+        }
 
         // Habilitar localización en el mapa
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
