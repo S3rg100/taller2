@@ -7,11 +7,13 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.location.Geocoder
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.AsyncTask
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -26,6 +28,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 
 class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
 
@@ -86,8 +89,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
             true
         }
 
-        // Inicializar el Polyline para dibujar la ruta
-        polylineOptions = PolylineOptions().width(5f).color(android.graphics.Color.BLUE)
+        polylineOptions = PolylineOptions().width(5f).color(android.graphics.Color.BLUE).geodesic(true)
 
         // Inicializar el Location Manager
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
@@ -114,7 +116,23 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
 
         // LongClickListener para agregar marcadores en el mapa al hacer click largo
         mMap.setOnMapLongClickListener { latLng ->
-            ReverseGeocodingTask().execute(latLng)
+            // Obtener dirección con Geocoder
+            val geocoder = Geocoder(this, Locale.getDefault())
+            try {
+                val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+                if (addresses != null && addresses.isNotEmpty()) {
+                    val address = addresses[0]
+                    val addressText = address.getAddressLine(0)
+
+                    // Añadir marcador con la dirección obtenida
+                    mMap.addMarker(MarkerOptions().position(latLng).title(addressText))
+                } else {
+                    Toast.makeText(this, "No se encontró la dirección", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this, "Error al obtener la dirección", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -122,8 +140,17 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
         val currentLatLng = LatLng(location.latitude, location.longitude)
         routePoints.add(currentLatLng)
 
+        // Log para verificar si se añaden puntos correctamente
+        Log.d("MapActivity", "Ubicación cambiada: ${location.latitude}, ${location.longitude}")
+
         // Actualizar Polyline con los puntos de la ruta
         polylineOptions.add(currentLatLng)
+
+        // Limpiar el mapa y volver a agregar el Polyline actualizado
+        mMap.clear()
+        mMap.addPolyline(polylineOptions)
+
+        // Mover la cámara a la nueva ubicación
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f))
     }
 
