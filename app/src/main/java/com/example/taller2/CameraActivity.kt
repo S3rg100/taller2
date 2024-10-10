@@ -90,13 +90,45 @@ class CameraActivity : AppCompatActivity() {
 
     // Permisos de Galería
     private fun checkGalleryPermission() {
-        requestPermissionWithSnackbar(
-            this,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            "Se necesita acceso a la galería para seleccionar fotos y videos",
-            galleryPermissionLauncher,
-            ::handleGalleryAction // Lanza la acción de galería si ya tiene los permisos
-        )
+        when {
+            // Para Android 13 (API 33) o superior
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU -> {
+                val permission = if (switchVideo.isChecked) {
+                    Manifest.permission.READ_MEDIA_VIDEO
+                } else {
+                    Manifest.permission.READ_MEDIA_IMAGES
+                }
+                requestPermissionWithSnackbar(
+                    this,
+                    permission,
+                    "Se necesita acceso a la galería para seleccionar archivos desde la galería",
+                    galleryPermissionLauncher,
+                    ::handleGalleryAction
+                )
+            }
+
+            // Para Android 11 (API 30) o superior
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R -> {
+                requestPermissionWithSnackbar(
+                    this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    "Se necesita acceso a la galería para seleccionar fotos y videos",
+                    galleryPermissionLauncher,
+                    ::handleGalleryAction
+                )
+            }
+
+            // Para versiones anteriores
+            else -> {
+                requestPermissionWithSnackbar(
+                    this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    "Se necesita acceso a la galería para seleccionar fotos y videos",
+                    galleryPermissionLauncher,
+                    ::handleGalleryAction
+                )
+            }
+        }
     }
 
     // Maneja la acción de la cámara dependiendo de si está seleccionada la opción de video o foto
@@ -174,18 +206,18 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    // Logica para pedir permisos
+    // Lógica para pedir permisos
     private fun requestPermissionWithSnackbar(
         context: Context,
         permission: String,
         rationale: String,
         getSimplePermission: ActivityResultLauncher<String>,
-        onPermissionGranted: () -> Unit // Nuevo parámetro para manejar la acción cuando los permisos ya están concedidos
+        onPermissionGranted: () -> Unit
     ) {
         when {
             ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED -> {
                 Snackbar.make(findViewById(android.R.id.content), "Ya tengo los permisos", Snackbar.LENGTH_LONG).show()
-                onPermissionGranted() // Lanzar la acción correspondiente
+                onPermissionGranted()
             }
 
             shouldShowRequestPermissionRationale(permission) -> {
